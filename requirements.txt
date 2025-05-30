@@ -1,7 +1,6 @@
 flask
 flask-cors
 flask-socketio
-pymcprotocol
 eventlet
 pytz
 requests
