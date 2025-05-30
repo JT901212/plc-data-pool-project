@@ -89,6 +89,34 @@ class PLCDataPool:
         self.load_config()
         self.init_database()
         
+        try:
+            with open('mock_plc_data.json', 'r') as f:
+                mock_data = json.load(f)
+                for plc_id, registers in mock_data.items():
+                    self.current_data[plc_id] = PLCData(
+                        plc_id=plc_id,
+                        timestamp=datetime.now(),
+                        registers=registers,
+                        connection_status=True
+                    )
+                logger.info(f"Loaded mock data for {len(mock_data)} PLCs")
+        except FileNotFoundError:
+            logger.warning("No mock data found, continuing with real PLC connections")
+
+        try:
+            with open('mock_plc_data.json', 'r') as f:
+                mock_data = json.load(f)
+                for plc_id, registers in mock_data.items():
+                    self.current_data[plc_id] = PLCData(
+                        plc_id=plc_id,
+                        timestamp=datetime.now(),
+                        registers=registers,
+                        connection_status=True
+                    )
+                logger.info(f"Loaded mock data for {len(mock_data)} PLCs")
+        except FileNotFoundError:
+            logger.warning("No mock data found, continuing with real PLC connections")
+
         logger.info("PLCDataPool initialized")
 
     def load_config(self):
@@ -1172,13 +1200,26 @@ def get_plc_registers(plc_id):
         return jsonify({'error': 'Data pool not initialized'}), 500
     
     # Get register names from query parameters
+    logger.debug(f"Raw query args for PLC {plc_id}: {request.args}")
     register_names = request.args.getlist('registers')
+    logger.debug(f"Initial register_names: {register_names}")
+    
+    # Handle comma-separated values in a single parameter
+    if len(register_names) == 1 and ',' in register_names[0]:
+        register_names = register_names[0].split(',')
+        logger.debug(f"Split register_names: {register_names}")
+    
+    # Remove any empty strings from the list
+    register_names = [name.strip() for name in register_names if name.strip()]
+    logger.debug(f"Final register_names: {register_names}")
+    
     if not register_names:
         # If no specific registers requested, return all
         data = data_pool.get_current_data(plc_id)
         return jsonify(data.get('registers', {}))
     
     data = data_pool.get_register_data(plc_id, register_names)
+    logger.debug(f"Register data result: {data}")
     return jsonify(data)
 
 @app.route('/api/plc/all')
